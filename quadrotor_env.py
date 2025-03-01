@@ -34,7 +34,7 @@ class QuadrotorEnv(gym.Env):
         self.viewer = None  # Viewer is not created until needed
         self.target_position = np.array([0, 0, 1])  # Hover position
         self.target_yaw = 0  # Desired yaw  
-        self.max_steps = 1000
+        self.max_steps = int(20/self.model.opt.timestep)
         self.current_step = 0
 
         # Additional variables
@@ -47,10 +47,10 @@ class QuadrotorEnv(gym.Env):
 
     def step(self, action):
         '''Peforms a step in the environment'''
-        self.current_step += 1
 
         # Flight Controller
-        self.position_controller(action)
+        if self.current_step % 10 == 0:
+            self.position_controller(action)
         self.attitude_controller(action)
         self.mixer()
 
@@ -59,16 +59,17 @@ class QuadrotorEnv(gym.Env):
 
         # Step MuJoCo simulation
         mujoco.mj_step(self.model, self.data)
-
+        self.current_step += 1
+        
         # Render if real-time visualization is enabled
         if self.render_mode == "human":
             self.render()
-
+            
         # Compute reward (hover stability, low control effort)
         reward = -np.linalg.norm(self.target_position - self.data.qpos[0:3]) - 0.1 * np.linalg.norm(self.data.qvel[0:3])
 
         # Check termination
-        done = self.current_step >= self.max_steps or np.abs(self.data.qpos[2]) > 10
+        done = self.current_step >= self.max_steps or self.data.qpos[2] <= 0.025
 
         return self._get_obs(), reward, done, False, {}
     
@@ -85,25 +86,33 @@ class QuadrotorEnv(gym.Env):
     def reset(self, seed=None, options=None):
         ''' Reset the environment '''
         super().reset(seed=seed)
+        self.current_step = 0
+        mujoco.mj_resetData(self.model, self.data)
 
         # Randomize spawn point
         x_random = np.random.uniform(-1, 1)
         y_random = np.random.uniform(-1, 1)
-        z_random = np.random.uniform(0, 2)
+        z_random = np.random.uniform(0.5, 2)
         self.data.qpos[0:3] = np.array([x_random, y_random, z_random])
-
-        self.current_step = 0
-        mujoco.mj_resetData(self.model, self.data)
+        
         return self._get_obs(), {}
 
 
     def render(self):
         ''' Render the environment in real-time '''
+
         if self.render_mode == "human":
             if self.viewer is None:
-                self.viewer = mujoco.viewer.launch(self.model, self.data)  # Create a real-time viewer
+                self.viewer = mujoco.viewer.launch_passive(self.model, self.data)
 
-            self.viewer.render()
+            # Camera Settings
+            self.viewer.cam.type = mujoco.mjtCamera.mjCAMERA_FREE
+            self.viewer.cam.azimuth = 45
+            self.viewer.cam.elevation = -30
+            self.viewer.cam.distance = 4.0
+            self.viewer.cam.lookat[:] = self.data.qpos[:3]
+
+            self.viewer.sync()
 
 
     def close(self):
