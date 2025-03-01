@@ -8,7 +8,7 @@ env = QuadrotorEnv(render_mode="human")  # Enable live rendering
 obs, _ = env.reset()
 
 # Define PID gains for position and orientation
-pid_gains = np.array([1.5, 0.1, 0.8, 1.2, 0.1, 0.5])  # [Kp_pos, Ki_pos, Kd_pos, Kp_ang, Ki_ang, Kd_ang]
+pid_gains = np.array([0.1, 0., 0.1, 0.1, 0., 0.1, 0.1, 0., 0.1, 0.01, 0.01]) 
 
 # Simulate for 200 steps
 for _ in range(200):
