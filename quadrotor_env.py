@@ -27,7 +27,7 @@ class QuadrotorEnv(gym.Env):
 
         # Action space
         self.action_space = gym.spaces.Box(
-            low=0, high=10, shape=(11,), dtype=np.float32
+            low=0, high=1, shape=(4,), dtype=np.float32
         )
 
         self.render_mode = render_mode
@@ -49,13 +49,13 @@ class QuadrotorEnv(gym.Env):
         '''Peforms a step in the environment'''
 
         # Flight Controller
-        if self.current_step % 10 == 0:
-            self.position_controller(action)
-        self.attitude_controller(action)
-        self.mixer()
+        #if self.current_step % 10 == 0:
+        #    self.position_controller(action)
+        #self.attitude_controller(action)
+        #self.mixer()
 
         # Send motor force data as control input ()
-        self.data.ctrl[:] = self.motor_force
+        self.data.ctrl[:] = action
 
         # Step MuJoCo simulation
         mujoco.mj_step(self.model, self.data)
@@ -90,10 +90,10 @@ class QuadrotorEnv(gym.Env):
         mujoco.mj_resetData(self.model, self.data)
 
         # Randomize spawn point
-        x_random = np.random.uniform(-1, 1)
-        y_random = np.random.uniform(-1, 1)
-        z_random = np.random.uniform(0.5, 2)
-        self.data.qpos[0:3] = np.array([x_random, y_random, z_random])
+        #x_random = np.random.uniform(-2, 2)
+        #y_random = np.random.uniform(-2, 2)
+        #z_random = np.random.uniform(0.5, 2)
+        #self.data.qpos[0:3] = np.array([x_random, y_random, z_random])
         
         return self._get_obs(), {}
 

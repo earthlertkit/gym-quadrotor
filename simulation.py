@@ -1,7 +1,5 @@
 from quadrotor_env import QuadrotorEnv
-import numpy as np
-import mujoco
-import mujoco.viewer
+from stable_baselines3 import PPO
 import time
 
 # Create the environment
@@ -12,10 +10,11 @@ obs, _ = env.reset()
 dt = env.model.opt.timestep
 
 # Define PID gains for position and orientation
-gains = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]) 
+model = PPO.load("quadrotor_ppo.zip")
 
 # Simulate while GUI is open
 while True:
-    obs, reward, done, _, _ = env.step(gains)  # Apply PID gains as action
+    action, _ = model.predict(obs)
+    obs, reward, done, _, _ = env.step(action)  # Apply PID gains as action
     env.render()
     time.sleep(dt)
